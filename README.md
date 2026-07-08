@@ -7,31 +7,7 @@ Learn to build a ride-sharing Android Taxi Clone App like Uber, Lyft - Open-Sour
 </p>
 <br>
 
-## About me
-
-Hi, I am Amit Shekhar, Founder @ [Outcome School](https://outcomeschool.com) • IIT 2010-14 • I have taught and mentored many developers, and their efforts landed them high-paying tech jobs, helped many tech companies in solving their unique problems, and created many open-source libraries being used by top companies. I am passionate about sharing knowledge through open-source, blogs, and videos.
-
-### Follow Amit Shekhar
-
-- [X/Twitter](https://twitter.com/amitiitbhu)
-- [LinkedIn](https://www.linkedin.com/in/amit-shekhar-iitbhu)
-- [GitHub](https://github.com/amitshekhariitbhu)
-
-### Follow Outcome School
-
-- [YouTube](https://youtube.com/@OutcomeSchool)
-- [X/Twitter](https://x.com/outcome_school)
-- [LinkedIn](https://www.linkedin.com/company/outcomeschool)
-- [GitHub](http://github.com/OutcomeSchool)
-
-## I teach at Outcome School
-
-- AI and Machine Learning
-- Android
-
-Join Outcome School and get a high-paying tech job: [Outcome School](https://outcomeschool.com)
-
-## [Outcome School Blog](https://outcomeschool.com/blog) - High-quality content to learn Android concepts.
+## High-quality content to learn Android concepts.
 
 ## We will build and learn the following for the App like Uber and Lyft:
 * Create Rider Android Clone App
@@ -248,7 +224,7 @@ A WebSocket is a persistent connection between a client and server. WebSockets p
 
 ### License
 ```
-   Copyright (C) 2024 Amit Shekhar
+   Copyright (C) 2024 DK
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
