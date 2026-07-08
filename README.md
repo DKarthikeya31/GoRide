@@ -1,31 +1,59 @@
-# GoRide Android App
-Learn to build a ride-sharing Android Taxi Clone App like Uber, Lyft - Open-Source Project
+# GoRide — Android Ride-Sharing App (Uber/Lyft Clone)
 
+An end-to-end, production-style ride-sharing Android application that replicates the core rider experience of apps like **Uber** and **Lyft** — built to demonstrate real-world Android engineering: clean architecture, live map interactions, WebSocket-driven real-time updates, and smooth trip-state animations.
 
 <p align="center">
-    <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/banner-ridesharing-uber-lyft-app.jpg">
+  <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/banner-ridesharing-uber-lyft-app.jpg">
 </p>
-<br>
 
-## High-quality content to learn Android concepts.
+---
 
-## We will build and learn the following for the App like Uber and Lyft:
-* Create Rider Android Clone App
-* Fetch and show nearby cabs on Google Map
-* Set Pickup and drop location
-* Book a cab
-* Fetch and show driver current location
-* Show pickup and trip path on Map with Animation
-* Cab Arrival for a pickup like Uber
-* On-going trip UI
-* Trip End
-* Animation like Uber App for Moving Car
-* Just to make it simple. This project uses the basic MVP Architecture for building the Uber and Lyft clone
-* We have simulated the WebSocket API for you 
+## 1. Why This Project Matters
 
-## We have simulated the backend environment for you to get the real-work like experience.
+Ride-sharing apps are one of the hardest consumer product categories to get right on mobile: they combine live location tracking, map rendering, asynchronous networking, and a multi-stage state machine (search → book → pickup → trip → drop-off) that all has to feel instant and reliable to the user.
 
-## Screenshots from this project
+This project rebuilds that entire flow from scratch, including a **simulated backend and WebSocket server**, so the full rider journey can be developed, tested, and demoed without depending on a live production backend.
+
+---
+
+## 2. What the App Does
+
+| Stage | What Happens |
+|---|---|
+| **Discovery** | Rider opens the app, location permission is requested, nearby cabs are fetched and rendered on Google Maps |
+| **Booking** | Rider sets pickup and drop-off locations, requests a cab |
+| **Pickup** | Driver's live location streams in, pickup path is drawn and animated on the map |
+| **Arrival** | App reflects "cab is arriving" → "cab arrived" states |
+| **Trip** | Trip starts, live driver location + trip path animate turn-by-turn |
+| **Completion** | Trip ends; rider can immediately request another ride |
+
+---
+
+## 3. Architecture
+
+The app is intentionally built on a **simple, readable MVP (Model–View–Presenter)** architecture — prioritizing clarity of each feature over framework complexity, so the code stays approachable for anyone studying it.
+
+```
+View (Activity/Fragment)  ←→  Presenter  ←→  Model / WebSocket Layer
+```
+
+- **View** — renders UI state (map markers, bottom sheets, buttons, animations)
+- **Presenter** — owns business logic, decides what the View should show next
+- **Model / WebSocket Layer** — simulated real-time backend that mimics an actual ride-sharing server
+
+---
+
+## 4. Tech Stack
+
+- **Language:** Kotlin
+- **Maps & Location:** Google Maps SDK, Directions API, Places API
+- **Real-time layer:** Custom-simulated WebSocket module (`simulator`)
+- **Architecture:** MVP
+- **Animation:** Custom marker interpolation for smooth car movement (Uber-style)
+
+---
+
+## 5. Screenshots
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/nearby-cabs.png" width="200">
@@ -33,7 +61,6 @@ Learn to build a ride-sharing Android Taxi Clone App like Uber, Lyft - Open-Sour
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/pickup-drop-location-both-filled.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/request-cab-button.png" width="200">
 </p>
-<br>
 <p align="center">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/cab-is-booked.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/cab-is-arriving.png" width="200">
@@ -41,200 +68,131 @@ Learn to build a ride-sharing Android Taxi Clone App like Uber, Lyft - Open-Sour
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/trip-end.png" width="200">
 </p>
 
-## Building the project
-* Every feature is easy to follow.
-* Clone the project, the `master` branch has the latest code.
-* To learn and implement from the beginning, start with a new project.
-* This App uses the Google API Key for Maps, Directions, and Places. Get the API key from the Google Cloud Developer console after enabling the Maps, Directions and Places features for your project. Refer this [link](https://developers.google.com/maps/documentation/directions/get-api-key). And put that key in the local.properties file in your project:
-Your local.properties will like below:
+---
+
+## 6. Getting Started — Step by Step
+
+### Step 1: Clone the repository
+```bash
+git clone https://github.com/amitshekhariitbhu/ridesharing-uber-lyft-app.git
 ```
-sdk.dir=PATH_TO_ANDROID_SDK_ON_YOUR_LOCAL_MACHINE    
+The `master` branch always has the latest, working code.
+
+### Step 2: Get a Google API Key
+This app needs Maps, Directions, and Places APIs enabled.
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable **Maps SDK for Android**, **Directions API**, and **Places API**
+3. Generate an API key ([official guide](https://developers.google.com/maps/documentation/directions/get-api-key))
+
+### Step 3: Configure `local.properties`
+Add the SDK path and your API key:
+```
+sdk.dir=PATH_TO_ANDROID_SDK_ON_YOUR_LOCAL_MACHINE
 apiKey=YOUR_API_KEY
 ```
-* Start implementing features:
-   * Start with a new project.
-   * Setup project with basic MVP Architecture.
-   * Implement Permission for fetching current location.
-   * Implement feature - nearby cabs.
-   * Use WebSocket present in `simulator` module to fetch the nearby cabs.
-   * Implement feature - pickup and drop location.
-   * Implement feature - book a cab.
-   * Implement feature - Show pickup path on the map with Animation.
-   * Implement feature - Show the current driver location during pickup.
-   * Implement feature - Cab is arriving and arrived.
-   * Implement feature - Car Animation like Uber.
-   * Implement feature - Show trip path on the map with Animation.
-   * Implement feature - Trip Starts.
-   * Implement feature - Show the current driver location during the trip.
-   * Implement feature - Trip on-going.
-   * Implement feature - Trip Ends.
-   * Implement feature - Implement Take Next Ride.
 
-## WebSocket API Reference for this project
-A WebSocket is a persistent connection between a client and server. WebSockets provide a bidirectional, full-duplex communications channel that operates over HTTP through a single TCP/IP socket connection. At its core, the WebSocket protocol facilitates message passing between a client and server. In our case, we have simulated it for you.
+### Step 4: Build the project incrementally
+If you're using this as a learning reference, build it feature-by-feature rather than all at once:
 
-* In WebSocket, we have three methods:
-   * `connect()`: To connect with the server
-   * `sendMessage(data: String)`: To send the data to the server
-   * `disconnect()`: To disconnect from the server
+1. Start a new Android project
+2. Set up the base MVP architecture
+3. Implement runtime location permission handling
+4. Implement **nearby cabs** using the `simulator` module's WebSocket
+5. Implement pickup & drop-off location selection
+6. Implement the **book a cab** flow
+7. Draw and animate the **pickup path** on the map
+8. Stream and render the **driver's live location** during pickup
+9. Handle **cab is arriving** → **cab arrived** states
+10. Add Uber-style **smooth car marker animation**
+11. Draw and animate the **trip path**
+12. Handle **trip start** → **trip on-going** → **trip end**
+13. Implement **"take next ride"** to loop the flow
 
-* In WebSocketListener, we have four callbacks:
-   * `onConnect()`: Called when it is connected with the server
-   * `onMessage(data: String)`: Called when an event comes from the server
-   * `fun onDisconnect()`: Called when the client is disconnected from the server
-   * `fun onError(error: String)`:  Called when the error occurred on the server
+### Step 5: Run it
+Build and run on an emulator or physical device with Google Play Services installed.
 
-* Client sending event to server using `webSocket.sendMessage(data)`:
-    * Request for nearby cabs from server
-    ```json
-    {
-      "type": "nearByCabs",
-      "lat": 28.438147,
-      "lng": 77.0994446
-    }
-    ``` 
-   * Request a cab from server
-    ```json
-    {
-      "type": "requestCab",
-      "pickUpLat": 28.4369353,
-      "pickUpLng": 77.1125599,
-      "dropLat": -25.274398,
-      "dropLng": 133.775136
-    }
-    ```
-  
-* The Server sending success event to the client received in `onMessage(data: String)`:
-   * NearBy cabs 
-    ```json
-    {
-      "type": "nearByCabs",
-      "locations": [
-        {
-          "lat": 28.439147000000002,
-          "lng": 77.0944446
-        },
-        {
-          "lat": 28.433147,
-          "lng": 77.0952446
-        },
-        {
-          "lat": 28.440547000000002,
-          "lng": 77.1026446
-        }
-      ]
-    }
-    ```
-   * Cab Booked
-    ```json
-    {
-      "type": "cabBooked"
-    }
-    ```  
-   * PickUp Path
-    ```json
-    {
-      "type": "pickUpPath",
-      "path": [
-        {
-          "lat": 28.43578,
-          "lng": 77.10198000000001
-        },
-        {
-          "lat": 28.43614,
-          "lng": 77.10164
-        },
-        {
-          "lat": 28.436400000000003,
-          "lng": 77.10149000000001
-        }
-      ]
-    }
-    ```   
-   * Cab Current Location during pickup or trip
-    ```json
-    {
-      "type": "location",
-      "lat": 28.43578,
-      "lng": 77.10198000000001
-    }
-    ```  
-   * Cab is Arriving
-    ```json
-    {
-      "type": "cabIsArriving"
-    }
-    ```    
-   * Cab Arrived
-    ```json
-    {
-      "type": "cabArrived"
-    }
-    ```    
-   * Trip Start
-    ```json
-    {
-      "type": "tripStart"
-    }
-    ```       
-   * Trip Path
-    ```json
-    {
-      "type": "tripPath",
-      "path": [
-        {
-          "lat": 28.438370000000003,
-          "lng": 77.09944
-        },
-        {
-          "lat": 28.438450000000003,
-          "lng": 77.1006
-        },
-        {
-          "lat": 28.438480000000002,
-          "lng": 77.10095000000001
-        }
-      ]
-    }
-    ``` 
-   * Trip End
-    ```json
-    {
-      "type": "tripEnd"
-    }
-    ```          
-* The server sending the error event to the client received in `onError(error: String)`:
-   * Direction API Failed
-    ```json
-    {
-      "type": "directionApiFailed",
-      "error": "Unable to resolve host \"maps.googleapis.com\": No address associated with hostname"
-    }
-    ```
-   * Routes Not Available
-    ```json
-    {
-      "type": "routesNotAvailable"
-    }
-    ```  
+---
 
-### Find this project useful ? :heart:
+## 7. WebSocket API Reference
 
-* Support it by clicking the :star: button on the upper right of this page. :v:
+The app talks to a **simulated backend** over a WebSocket abstraction, so the real-time behavior of a production ride-sharing service can be developed against locally.
 
-### License
+### Core WebSocket Methods
+| Method | Purpose |
+|---|---|
+| `connect()` | Opens the connection to the server |
+| `sendMessage(data: String)` | Sends a JSON payload to the server |
+| `disconnect()` | Closes the connection |
+
+### Core WebSocket Listener Callbacks
+| Callback | Fires When |
+|---|---|
+| `onConnect()` | Connection is established |
+| `onMessage(data: String)` | Server pushes an event |
+| `onDisconnect()` | Connection is closed |
+| `onError(error: String)` | Something goes wrong server-side |
+
+### Client → Server Messages
+
+**Request nearby cabs**
+```json
+{ "type": "nearByCabs", "lat": 28.438147, "lng": 77.0994446 }
 ```
-   Copyright (C) 2024 DK
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+**Request a cab**
+```json
+{
+  "type": "requestCab",
+  "pickUpLat": 28.4369353,
+  "pickUpLng": 77.1125599,
+  "dropLat": -25.274398,
+  "dropLng": 133.775136
+}
+```
 
-       http://www.apache.org/licenses/LICENSE-2.0
+### Server → Client Messages
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+| Event Type | Payload Highlights |
+|---|---|
+| `nearByCabs` | Array of `{lat, lng}` cab locations |
+| `cabBooked` | Confirms booking |
+| `pickUpPath` | Array of `{lat, lng}` points for the pickup route |
+| `location` | Live `{lat, lng}` of the cab during pickup/trip |
+| `cabIsArriving` | Cab is close to pickup point |
+| `cabArrived` | Cab has arrived |
+| `tripStart` | Trip has begun |
+| `tripPath` | Array of `{lat, lng}` points for the trip route |
+| `tripEnd` | Trip is complete |
+
+### Error Events (via `onError`)
+
+| Error Type | Meaning |
+|---|---|
+| `directionApiFailed` | Directions API call failed (e.g., network/DNS issue) |
+| `routesNotAvailable` | No route could be found between the two points |
+
+---
+
+## 8. Support This Project
+
+If this project helped you learn something, consider giving it a ⭐ on GitHub — it helps others discover it too.
+
+---
+
+## 9. License
+
+```
+Copyright (C) 2024 DK
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
