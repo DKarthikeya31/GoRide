@@ -1,4 +1,4 @@
-# Ride-Sharing Uber Lyft Android App
+# GoRide Android App
 Learn to build a ride-sharing Android Taxi Clone App like Uber, Lyft - Open-Source Project
 
 
