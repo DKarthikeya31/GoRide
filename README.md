@@ -193,13 +193,6 @@ ridesharing-uber-lyft-app/
 
 ---
 
-## 10. Getting Started
-
-### Step 1 — Clone the repository
-```bash
-git clone https://github.com/amitshekhariitbhu/ridesharing-uber-lyft-app.git
-```
-
 ### Step 2 — Get a Google API Key
 This app needs **Maps SDK for Android**, **Directions API**, and **Places API** enabled.
 1. Open the [Google Cloud Console](https://console.cloud.google.com/)
