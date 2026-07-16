@@ -1,6 +1,6 @@
-# 🚕 GoRide — Real-Time Ride-Sharing Android App (Uber/Lyft Architecture Clone)
+# 🚕 GoRide — A Real-Time Ride-Sharing App for Android
 
-**A production-grade Android application replicating the core Uber/Lyft rider experience** — built to showcase senior-level Android engineering: clean layered architecture, live map/location systems, WebSocket-driven real-time state, and buttery-smooth trip animations.
+A rider-side clone of the Uber/Lyft experience, built from scratch to explore how the hardest parts of ride-sharing actually work under the hood: live location tracking, real-time server-driven state, and smooth map animation.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/banner-ridesharing-uber-lyft-app.jpg">
@@ -15,293 +15,114 @@
 
 ---
 
-## 📌 Table of Contents
+## Why I built this
 
-1. [Problem Statement](#1-problem-statement)
-2. [System Overview](#2-system-overview)
-3. [Architecture](#3-architecture)
-4. [Real-Time Communication Layer](#4-real-time-communication-layer)
-5. [State Machine — Trip Lifecycle](#5-state-machine--trip-lifecycle)
-6. [Tech Stack](#6-tech-stack)
-7. [Project Structure](#7-project-structure)
-8. [Functional Requirements](#8-functional-requirements)
-9. [Non-Functional Requirements](#9-non-functional-requirements)
-10. [Getting Started](#10-getting-started)
-11. [WebSocket API Reference](#11-websocket-api-reference)
-12. [Engineering Highlights](#12-engineering-highlights-what-makes-this-non-trivial)
-13. [Screenshots](#13-screenshots)
-14. [Roadmap](#14-roadmap)
-15. [License](#15-license)
+Ride-sharing apps look simple on the surface, but a single screen has to juggle a lot at once: live location updates for both rider and driver, a map that renders routes and moving markers, a server that can push state changes at any moment, and a strict trip lifecycle (search → book → pickup → trip → drop-off) that can never fall out of sync with what the user sees.
+
+I wanted to understand — and be able to speak to in an interview — exactly how those systems fit together. So I built GoRide end-to-end, including a simulated WebSocket backend, so the entire rider journey could be developed and tested without depending on a live production server.
 
 ---
 
-## 1. Problem Statement
+## What it does
 
-Ride-sharing is one of the hardest consumer mobile categories to build correctly, because a single screen has to simultaneously handle:
-
-- **Live location streaming** for both rider and driver
-- **Map rendering** with route polylines, camera control, and marker animation
-- **Asynchronous, bidirectional networking** (server can push state changes at any time)
-- **A strict multi-stage state machine** (search → book → pickup → arrival → trip → drop-off) that must never desync from what the user sees on screen
-- **Failure handling** for network drops, no-route-found, and reconnection — without corrupting trip state
-
-GoRide reconstructs this entire flow end-to-end, including a **simulated WebSocket backend**, so the full rider journey can be built, tested, and demoed without depending on a live production server.
+- Requests location permission and shows nearby cabs on a live map
+- Lets the rider pick a pickup and drop-off location with Places autocomplete
+- Books a cab and shows a live-animated route as the driver approaches
+- Streams the driver's location and moves the car marker smoothly, instead of snapping between GPS pings
+- Updates the UI as the cab is arriving, arrives, starts the trip, and completes it
+- Lets the rider immediately request another ride after a trip ends
+- Handles errors (no route found, directions API failure) without breaking the app's state
 
 ---
 
-## 2. System Overview
+## How it's built
+
+**Architecture: MVP (Model–View–Presenter)**
+
+I chose MVP over a heavier framework like MVVM so that every screen's logic could be unit-tested without touching the Android framework, and so the state machine for a trip lives in one obvious place — the Presenter — rather than being spread across a ViewModel and LiveData chain.
 
 ```
-┌──────────────┐        WebSocket (JSON events)        ┌───────────────────┐
-│   Android     │ ─────────────────────────────────────▶ │  Simulated Server │
-│   Client      │ ◀───────────────────────────────────── │  (simulator mod.) │
-└──────────────┘                                        └───────────────────┘
-       │
-       ├── Google Maps SDK  (map rendering, markers, camera)
-       ├── Directions API   (route polylines)
-       └── Places API       (pickup / drop-off search)
+        user actions                state updates
+   View ───────────────▶  Presenter ───────────────▶  Model / WebSocket Layer
+(map, UI)                (business logic)            (simulated real-time backend)
 ```
 
-The client never assumes server state — every UI transition is **driven by an event from the WebSocket layer**, making the app resilient to timing issues and easy to reason about.
+| Layer | What it owns |
+|---|---|
+| **View** | Renders state only — map markers, bottom sheets, buttons, marker animation |
+| **Presenter** | All business logic; decides what the view shows next, with zero Android dependencies |
+| **Model / WebSocket layer** | The simulated backend that emits ride events in real time |
+
+**Real-time layer, not polling**
+
+The app talks to a WebSocket abstraction the same way it would talk to a production dispatch server — `connect()`/`disconnect()` manage the connection lifecycle, every server push arrives as a typed event, and network errors (like a failed directions call) come through a separate error channel so they never corrupt the trip state.
+
+**The trip lifecycle is a strict state machine**
+
+```
+Discovery → Booking → cabBooked → cabIsArriving → cabArrived → tripStart → tripPath (live) → tripEnd → ready for next ride
+```
+
+Every one of those transitions is driven by an explicit server event — never a timer, never a guess. That was the main engineering constraint I held myself to: the UI should always be a direct reflection of the last thing the server said, nothing more.
 
 ---
 
-## 3. Architecture
-
-GoRide uses a deliberately simple, highly-readable **MVP (Model–View–Presenter)** pattern instead of a heavier framework — prioritizing clarity of each feature so the codebase stays approachable for review, extension, and interview walkthroughs.
-
-```
-┌─────────────────────┐      user actions      ┌─────────────────────┐
-│        View          │ ───────────────────▶  │     Presenter        │
-│ (Activity/Fragment)  │                        │  (business logic)    │
-│                       │ ◀───────────────────  │                       │
-└─────────────────────┘     state updates      └──────────┬──────────┘
-                                                            │
-                                                 ┌──────────▼──────────┐
-                                                 │   Model Layer        │
-                                                 │  WebSocket client +  │
-                                                 │  simulated backend   │
-                                                 └───────────────────────┘
-```
-
-| Layer | Responsibility | Depends On |
-|---|---|---|
-| **View** | Renders UI state only — map markers, bottom sheets, buttons, marker animation | Presenter (via interface) |
-| **Presenter** | Owns all business logic; decides what the View shows next based on events | Model layer (via interface), never Android framework directly |
-| **Model / WebSocket Layer** | Simulated real-time backend; emits ride lifecycle events over a WebSocket abstraction | Nothing (pure data layer) |
-
-**Why MVP over MVVM here:** the View–Presenter contract is defined through plain interfaces, which keeps every screen's logic unit-testable without Android instrumentation, and keeps the mental model of "one presenter owns one trip's state machine" explicit rather than implicit in a ViewModel + LiveData chain.
-
----
-
-## 4. Real-Time Communication Layer
-
-Rather than polling, GoRide's `simulator` module exposes a **WebSocket abstraction** so the client is built exactly the way it would be against a production ride-sharing backend:
-
-- `connect()` / `disconnect()` manage the connection lifecycle explicitly, so reconnection and cleanup are first-class, not an afterthought
-- All server events arrive as `onMessage(data: String)` JSON payloads, decoded into typed sealed events on the client
-- `onError(error: String)` is a distinct channel from normal state events, so network failures (`directionApiFailed`, `routesNotAvailable`) are handled without corrupting the trip state machine
-
-This mirrors how a real rider app talks to services like a location/dispatch server — location pushes, trip-state pushes, and error channels are all separate concerns.
-
----
-
-## 5. State Machine — Trip Lifecycle
-
-```
-   ┌───────────┐   nearByCabs   ┌───────────┐  requestCab   ┌────────────┐
-   │ Discovery │ ─────────────▶ │  Booking  │ ─────────────▶│ cabBooked  │
-   └───────────┘                └───────────┘               └─────┬──────┘
-                                                                   │ pickUpPath / location
-                                                                   ▼
-                                                          ┌──────────────────┐
-                                                          │ cabIsArriving /  │
-                                                          │   cabArrived     │
-                                                          └────────┬─────────┘
-                                                                   │ tripStart
-                                                                   ▼
-                                                          ┌──────────────────┐
-                                                          │  tripPath /      │
-                                                          │  location (live) │
-                                                          └────────┬─────────┘
-                                                                   │ tripEnd
-                                                                   ▼
-                                                          ┌──────────────────┐
-                                                          │  Take Next Ride  │
-                                                          └──────────────────┘
-```
-
-Every transition above corresponds 1:1 to a server-pushed event — the client never infers state from a timer or an assumption, only from an explicit message.
-
----
-
-## 6. Tech Stack
+## Tech stack
 
 | Category | Choice |
 |---|---|
 | Language | Kotlin |
-| Architecture | MVP (View ↔ Presenter ↔ Model) |
-| Maps & Location | Google Maps SDK for Android, Directions API, Places API |
-| Real-time layer | Custom-simulated WebSocket module (`simulator`) |
-| Animation | Custom marker interpolation for smooth, Uber-style car movement along polylines |
+| Architecture | MVP |
+| Maps & location | Google Maps SDK, Directions API, Places API |
+| Real-time layer | Custom-simulated WebSocket module |
+| Animation | Custom marker interpolation for smooth car movement along a route |
 | Build | Gradle (Kotlin DSL) |
 
 ---
 
-## 7. Project Structure
+## Project structure
 
 ```
-ridesharing-uber-lyft-app/
-├── app/
-│   └── src/main/java/.../
-│       ├── ui/                 # Activities/Fragments — View layer
-│       │   ├── maps/           # Map rendering, marker animation
-│       │   └── booking/        # Pickup/drop-off selection UI
-│       ├── presenter/          # Presenter layer — per-screen business logic
-│       ├── model/              # Data models (Cab, Trip, LatLng events, etc.)
-│       └── simulator/          # Simulated WebSocket server + client abstraction
-├── assets/                     # Screenshots / demo media
-├── local.properties            # SDK path + API key (not committed)
-└── build.gradle.kts
+app/src/main/java/.../
+├── ui/            View layer — activities, fragments, map rendering, marker animation
+│   ├── maps/
+│   └── booking/
+├── presenter/     Per-screen business logic — the state machine lives here
+├── model/         Data models: Cab, Trip, location events
+└── simulator/      Simulated WebSocket server + client abstraction
 ```
 
 ---
 
-## 8. Functional Requirements
+## Engineering details worth highlighting
 
-- [ ] Request and display runtime **location permission**
-- [ ] Fetch and render **nearby cabs** on Google Maps
-- [ ] Let the rider select **pickup and drop-off** locations via Places autocomplete
-- [ ] Send a **cab request** and receive a booking confirmation
-- [ ] Draw and animate the **pickup route** as the driver approaches
-- [ ] Stream the **driver's live location** and animate the car marker smoothly (not jumpy per-update snapping)
-- [ ] Reflect **cab-is-arriving → cab-arrived** states in the UI
-- [ ] Start a **trip**, draw the trip route, and stream live location during the trip
-- [ ] Handle **trip completion** and allow the rider to immediately request another ride
-- [ ] Gracefully surface **errors** (no route found, directions API failure) without crashing the state machine
-
-## 9. Non-Functional Requirements
-
-| Requirement | Target |
-|---|---|
-| **Location update smoothness** | Marker interpolation, not raw snapping, even at 1–2s update intervals |
-| **State consistency** | UI state is always derived from the latest server event — no client-side guessing |
-| **Resilience** | WebSocket disconnects are recoverable without losing trip context |
-| **Testability** | Presenter layer is unit-testable independent of Android framework classes |
-| **Cold start** | App reaches an interactive map within a few seconds on a mid-tier device |
-| **Extensibility** | New trip states / events can be added without touching unrelated screens |
+- **State machine, not spaghetti**: every trip transition is driven by exactly one server event type, so the UI can never desync from what actually happened.
+- **Smooth marker animation**: raw GPS pushes come in every 1–2 seconds, but the car interpolates between them so it never looks like it's teleporting — the same problem a real driver-tracking map has to solve.
+- **Testable core logic**: the Presenter layer has no Android framework dependencies, so trip logic can be unit tested directly.
+- **Errors don't corrupt state**: a failed directions call or "no route found" is handled on its own channel, separate from normal trip events, so a network hiccup never leaves the app in a broken state.
+- **Same contract as a real backend**: the simulated server speaks the same event format a production dispatch service would, so the client code doesn't need to change to point at a real one.
 
 ---
 
-### Step 2 — Get a Google API Key
-This app needs **Maps SDK for Android**, **Directions API**, and **Places API** enabled.
-1. Open the [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable the three APIs above
-3. Generate a key ([official guide](https://developers.google.com/maps/documentation/directions/get-api-key))
+## Try it yourself
 
-### Step 3 — Configure `local.properties`
-```properties
-sdk.dir=PATH_TO_ANDROID_SDK_ON_YOUR_LOCAL_MACHINE
-apiKey=YOUR_API_KEY
-```
-
-### Step 4 — Build incrementally (recommended if studying the code)
-1. Base MVP architecture scaffold
-2. Runtime location permission handling
-3. Nearby cabs via the `simulator` WebSocket
-4. Pickup & drop-off location selection (Places)
-5. Book-a-cab flow
-6. Pickup path drawing + animation
-7. Live driver location streaming during pickup
-8. `cabIsArriving` → `cabArrived` handling
-9. Smooth car marker animation (Uber-style interpolation)
-10. Trip path drawing + animation
-11. `tripStart` → ongoing → `tripEnd` handling
-12. "Take next ride" loop
-
-### Step 5 — Run
-Build and run on an emulator or physical device with Google Play Services installed.
+1. Clone the repo and open it in Android Studio
+2. Enable **Maps SDK for Android**, **Directions API**, and **Places API** in the [Google Cloud Console](https://console.cloud.google.com/) and generate an API key
+3. Add it to `local.properties`:
+   ```properties
+   sdk.dir=PATH_TO_ANDROID_SDK
+   apiKey=YOUR_API_KEY
+   ```
+4. Build and run on an emulator or device with Google Play Services
 
 ---
 
-## 11. WebSocket API Reference
-
-### Connection Methods
-| Method | Purpose |
-|---|---|
-| `connect()` | Opens the connection to the server |
-| `sendMessage(data: String)` | Sends a JSON payload to the server |
-| `disconnect()` | Closes the connection |
-
-### Listener Callbacks
-| Callback | Fires When |
-|---|---|
-| `onConnect()` | Connection established |
-| `onMessage(data: String)` | Server pushes an event |
-| `onDisconnect()` | Connection closed |
-| `onError(error: String)` | Something fails server-side |
-
-### Client → Server
-
-**Request nearby cabs**
-```json
-{ "type": "nearByCabs", "lat": 28.438147, "lng": 77.0994446 }
-```
-
-**Request a cab**
-```json
-{
-  "type": "requestCab",
-  "pickUpLat": 28.4369353,
-  "pickUpLng": 77.1125599,
-  "dropLat": -25.274398,
-  "dropLng": 133.775136
-}
-```
-
-### Server → Client
-
-| Event Type | Payload Highlights |
-|---|---|
-| `nearByCabs` | Array of `{lat, lng}` cab locations |
-| `cabBooked` | Booking confirmation |
-| `pickUpPath` | Array of `{lat, lng}` route points |
-| `location` | Live `{lat, lng}` of the cab |
-| `cabIsArriving` | Cab is close to pickup point |
-| `cabArrived` | Cab has arrived |
-| `tripStart` | Trip has begun |
-| `tripPath` | Array of `{lat, lng}` route points |
-| `tripEnd` | Trip is complete |
-
-### Error Events (`onError`)
-
-| Error Type | Meaning |
-|---|---|
-| `directionApiFailed` | Directions API call failed (network/DNS issue) |
-| `routesNotAvailable` | No route found between the two points |
-
----
-
-## 12. Engineering Highlights (what makes this non-trivial)
-
-- **Deterministic state machine** driven entirely by server events — no polling, no client-side timers guessing trip phase.
-- **Smooth marker interpolation** between raw location pushes, avoiding the "jumping car" problem common in naive implementations.
-- **Decoupled Presenter layer** that has zero Android framework dependencies, enabling fast unit tests of trip logic.
-- **Explicit error channel** separate from state events, so transient network failures don't corrupt the UI's understanding of trip state.
-- **Simulated backend** that mirrors a real dispatch server's contract, so the exact same client code is ready to point at a production WebSocket service.
-
----
-
-## 13. Screenshots
+## Screenshots
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/nearby-cabs.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/pickup-drop-location.png" width="200">
-  <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/pickup-drop-location-both-filled.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/request-cab-button.png" width="200">
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/cab-is-booked.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/cab-is-arriving.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/on-trip.png" width="200">
   <img src="https://raw.githubusercontent.com/amitshekhariitbhu/ridesharing-uber-lyft-app/master/assets/trip-end.png" width="200">
@@ -309,35 +130,21 @@ Build and run on an emulator or physical device with Google Play Services instal
 
 ---
 
-## 14. Roadmap
+## What I'd build next
 
-- [ ] Driver-side app (currently rider-only)
-- [ ] Fare estimation before booking
-- [ ] Multiple vehicle tiers (economy / premium / pool)
-- [ ] Persisted trip history
-- [ ] Push notifications for trip state changes
-- [ ] Migrate simulated backend to a real WebSocket server for a full-stack demo
-
----
-
-## 15. License
-
-```
-Copyright (C) 2024 DK
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+- A driver-side app (this is currently rider-only)
+- Fare estimation before booking
+- Multiple vehicle tiers (economy / premium / pool)
+- Persisted trip history
+- Push notifications for trip state changes
+- Swapping the simulated backend for a real WebSocket server, for a full end-to-end demo
 
 ---
 
-<p align="center">If this project helped you, consider giving it a ⭐ — it helps others find it too.</p>
+## License
+
+Apache License 2.0 — see [LICENSE](http://www.apache.org/licenses/LICENSE-2.0) for details.
+
+---
+
+<p align="center">If this was useful or interesting, a ⭐ helps others find it.</p>
